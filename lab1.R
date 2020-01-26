@@ -1,3 +1,7 @@
+# Scout Oatman-Gaitan
+# Lab 1
+# January 23, 2020
+
 days <- c('Mon','Tue','Wed','Thur','Fri','Sat','Sun')
 temp <- c(28,30.5,32,31.2,29.3,27.9,26.4)
 snowed <- c(T,T,F,F,T,T,F)
@@ -169,4 +173,40 @@ par(pty="s")
 qqnorm(EPop)
 qqline(EPop)
 
+#COMPARING
+boxplot(ELand, EWater, EDesert, EPop)
+
 # Filtering EPI_regions
+summary(EPI_regions)
+summary(GEO_subregion)
+
+EPI_South_Asia <- EPI[EPI_regions=="South Asia"]
+EPI_South_Asia
+summary(EPI_South_Asia)
+
+EPI_Western_Europe <- EPI[GEO_subregion=="Western Europe"]
+EPI_Western_Europe
+summary(EPI_Western_Europe)
+
+EPI_Sub_Saharan_Africa <- EPI[EPI_regions=="Sub-Saharan Africa"]
+EPI_Sub_Saharan_Africa
+summary(EPI_Sub_Saharan_Africa)
+
+# GPW Part
+# I had already input the data and named it gpw
+
+attach(gpw)
+summary(PopulationPerUnit)
+summary(Area)
+boxplot(PopulationPerUnit, Area)
+colnames(gpw)
+
+hist(Num.Urban.Extents)
+hist(NumUnits)
+plot(NumUnits, PopulationPerUnit)
+
+## water treatment csv
+
+water <- read.csv("water-treatment.csv")
+View(water)
+summary(water)
