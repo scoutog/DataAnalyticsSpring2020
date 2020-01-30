@@ -85,9 +85,11 @@ ggplot(ToothGrowth, aes(supp,len,color=dose))+geom_point()
 
 ggplot(mtcars, aes(wt,mpg,color=cyl))+geom_point()+
   geom_smooth(aes(x=wt,y=mpg), method = "lm") + 
+  labs(title="Car MPG by Weight",subtitle="Author: Scout",caption="From mtcars") +
   theme_light()
 
 ggplot(mtcars) + 
   geom_point(aes(x = hp, y = mpg, color=cyl)) + 
   facet_wrap(.~cyl) + 
   theme_light()
+
