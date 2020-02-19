@@ -1,0 +1,227 @@
+---
+title: "Data Analytics Spring 2020 Lab 2"
+author: "Scout Oatman-Gaitan"
+date: "2/13/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
+
+# Lab 2, Part 1
+
+```{r}
+
+```
+
+
+```{r chunk 1}
+#Reading in CSV
+
+#Note that I am using "2010EPI_data"
+epi <- read.csv("2010EPI_data.csv",skip=1)
+
+#Central Tendancies of EPI variable
+summary(epi$EPI)
+mean(epi$EPI, na.rm=T)
+median(epi$EPI, na.rm=T)
+
+tf = is.na(epi$EPI)
+e_epi = epi$EPI[!tf]
+
+mode <- function(x) {
+  ux <- na.omit(unique(x) )
+  tab <- tabulate(match(x, ux)); ux[tab == max(tab) ]
+}
+mode(epi$EPI)
+
+#Central Tendancies of DALY variable
+summary(epi$DALY)
+mean(epi$DALY, na.rm=T)
+median(epi$DALY, na.rm=T)
+mode(epi$DALY)
+
+#Histograms for EPI and DALY
+hist(epi$EPI, breaks=10)
+hist(epi$DALY, breaks=10)
+
+#Getting sample_n & sample_frac
+library(dplyr)
+epi %>% 
+  select(EPI) %>% 
+  filter(!is.na(EPI)) %>% 
+  sample_n(5)
+
+epi %>% 
+  select(DALY) %>% 
+  filter(!is.na(DALY)) %>% 
+  sample_n(5)
+
+epi %>% 
+  select(EPI) %>% 
+  filter(!is.na(EPI)) %>% 
+  sample_frac(1/10)
+
+epi %>% 
+  select(DALY) %>% 
+  filter(!is.na(DALY)) %>% 
+  sample_frac(1/10)
+
+#Using arrange & desc
+new_decs_EPI <- epi %>% 
+  select(EPI) %>% 
+  filter(!is.na(EPI)) %>% 
+  arrange(desc(EPI))
+
+new_decs_DALY <- epi %>% 
+  select(DALY) %>% 
+  filter(!is.na(DALY)) %>% 
+  arrange(desc(DALY))
+
+# Mutate to double
+epi %>% 
+  select(EPI) %>% 
+  filter(!is.na(EPI)) %>% 
+  mutate(double_EPI = EPI * 2) %>% 
+  sample_n(5)
+
+epi %>% 
+  select(DALY) %>% 
+  filter(!is.na(DALY)) %>% 
+  mutate(double_DALY = DALY * 2) %>% 
+  sample_n(5)
+
+# summarize
+epi %>%   
+  select(EPI) %>% 
+  filter(!is.na(EPI)) %>% 
+  summarise(mean=mean(EPI))
+
+epi %>%   
+  select(DALY) %>% 
+  filter(!is.na(DALY)) %>% 
+  summarise(mean=mean(DALY))
+  
+# boxplot
+boxplot(epi$ENVHEALTH, epi$ECOSYSTEM)
+
+# qqplot
+qqplot(epi$ENVHEALTH, epi$ECOSYSTEM)
+
+#2b regression
+south_asia <- epi %>% filter(EPI_regions=="South Asia") %>% filter()
+
+lm(EPI ~ DALY, data=south_asia)
+
+# Import other EPI dataset for linear&least squares
+epi_data <- read.csv("EPI_data.csv")
+
+attach(epi_data)
+boxplot(ENVHEALTH, DALY, AIR_H, WATER_H)
+
+lmENVH <- lm(ENVHEALTH~DALY+AIR_H+WATER_H)
+lmENVH
+
+summary(lmENVH)
+
+cENVH <- coef(lmENVH)
+
+###################################################333
+DALYNEW<-c(seq(5,95,5))
+
+AIR_HNEW<-c(seq(5,95,5))
+
+WATER_HNEW<-c(seq(5,95,5))
+
+NEW <- data.frame(DALYNEW, AIR_HNEW, WATER_HNEW)
+
+pENV <- predict(lmENVH,NEW,interval="prediction")
+
+cENV <- predict(lmENVH,NEW,interval="confidence")
+```
+
+# Lab 2, Part 2
+
+### Regression
+
+```{r}
+# Regression
+multregression <- read.csv("dataset_multipleRegression.csv")
+
+# Use UNEM and HGRAD to predict ROLL knowing UNEM = 7% and HGRAD=90,000
+unem_val <- 0.07
+hgrad_val <- 90000
+inc_val <- 25000
+
+fit <- lm(ROLL ~ UNEM + HGRAD, data = multregression)
+coef(fit)
+
+predicted_roll = 698.2681*unem_val + 
+                  .9423*hgrad_val - 8255.7511
+predicted_roll
+
+# Again, and add INC where INC = 25,000
+fit2 <- lm(ROLL ~ UNEM + HGRAD + INC, data = multregression)
+coef(fit2)
+
+predicted_roll2 = 450.1245*unem_val + 
+                  0.4065*hgrad_val + 
+                  4.2749*inc_val - 9153.2545
+predicted_roll2
+```
+
+### Classification
+
+```{r}
+# Classification
+abalone <- read.csv("abalone.csv")
+
+# Dropping sex
+drops <- c("Sex")
+abalone <- abalone[ , !(names(abalone) %in% drops)]
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+abalone[1:7] <- as.data.frame(lapply(abalone[1:7], normalize))
+
+ind <- sample(2, nrow(abalone), replace=TRUE, prob=c(0.7, 0.3))
+
+KNNtrain <- abalone[ind==1,]
+
+KNNtest <- abalone[ind==2,]
+
+sqrt(2918)
+
+library(class)
+
+KNNpred <- knn(train = KNNtrain[1:7], test = KNNtest[1:7], cl = KNNtrain$Rings, k = 55)
+
+KNNpred
+
+table(KNNpred)
+```
+
+### Clustering
+
+```{r}
+# Clustering
+library(datasets)
+
+drops <- c("Species")
+iris1 <- iris[ , !(names(iris) %in% drops)]
+
+set.seed(101)
+
+irisClusters <- kmeans(iris1[,1:4], 3, nstart = 1000, iter.max=1000)
+table(irisClusters$cluster,iris$Species)
+
+# plotting
+library(cluster)
+clusplot(iris,irisClusters$cluster, color = TRUE, shade = TRUE, labels = 0, lines = 0)
+```
+
