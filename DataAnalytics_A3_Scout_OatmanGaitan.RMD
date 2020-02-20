@@ -1,5 +1,5 @@
 ---
-title: "Data Analytics Assignment #3"
+title: 'Data Analytics Assignment #3'
 author: "Scout Oatman-Gaitan"
 date: "2/19/2020"
 output: pdf_document
@@ -23,37 +23,123 @@ boxplot(nyt10$Impressions, nyt11$Impressions,
         nyt12$Impressions, nyt13$Impressions, 
         nyt14$Impressions, na.rm = T)
 ```
-Impressions Distribution: Each of the 5 datasets have positively skewed distributions. Q1 (~3), Median (~5), and Q3 (~6) are all very similar across the five sets and they all have outliers outside of the upper outlier range.
+
+## RESPONSE: 
+Impressions Distribution: Each of the 5 datasets have positively skewed distributions. Q1 (~3), Median (~5), and Q3 (~6) are all very similar across the five sets and they all have outliers outside of the upper outlier range. This tells us the common impression rates and their nature to be prone to positive outliers.
 ```{r}
 boxplot(nyt10$Clicks, nyt11$Clicks, nyt12$Clicks, 
         nyt13$Clicks, nyt14$Clicks, na.rm = T)
 ```
+
+##RESPONSE:
 Clicks Distribution: This distribution is unique. Lower outlier range = Q1 = Median = Q3 = Upper outlier range = 0. This makes it so that any value not equal to 0 is a positive outlier. This tells us that in general, the articles do not get clicks and getting even 1 click is a statistical outlier. 
 
 
 #### b). Create histograms for all 5 datasets for two key variables – can be the same variables in 1a or different (you choose the histogram bin width). Describe the distributions in terms of known parametric distributions and similarities/ differences among them. min. 3-4 sentences (3%)
 ```{r}
-#code
+hist(nyt10$Impressions)
+hist(nyt11$Impressions)
+hist(nyt12$Impressions)
+hist(nyt13$Impressions)
+hist(nyt14$Impressions)
 ```
+
+## RESPONSE: 
+In general, the impressions column for all 5 sets seems like normal distributions but they all have positive outliers, though not many. This makes the graph account for more values on the x-axis which makes the graph seem shifted but I would say that they are normal distributions prone to outliers.
+```{r}
+hist(nyt10$Clicks)
+hist(nyt11$Clicks)
+hist(nyt12$Clicks)
+hist(nyt13$Clicks)
+hist(nyt14$Clicks)
+```
+
+## RESPONSE:
+The clicks column is not a continuous variable, it is discrete. Further, it is equal to 0 for most values so much so that even a value of 1 is considered an outlier.  
 
 #### c). Plot the ECDFs (Empirical Cumulative Distribution Function for your two key variables. Plot the quantile-quantile distribution using a suitable parametric distribution you chose in 1b. Describe features of these plots. min. 3-4 sentences (4000-level 5%, 6000-level 3%)
 ```{r}
-#code
+plot(ecdf(nyt10$Impressions))
+plot(ecdf(nyt11$Impressions))
+plot(ecdf(nyt12$Impressions))
+plot(ecdf(nyt13$Impressions))
+plot(ecdf(nyt14$Impressions))
 ```
+##RESPONSE:
+ECDF Impressions: The data tells us that by the point x = 10, we have seen the majority of the data. We see a significant rise in F(x) from x = 3 to x = 10 with pretty minimal growth/decay in the other ends of the graph.
+```{r}
+plot(ecdf(nyt10$Clicks))
+plot(ecdf(nyt11$Clicks))
+plot(ecdf(nyt12$Clicks))
+plot(ecdf(nyt13$Clicks))
+plot(ecdf(nyt14$Clicks))
+```
+
+## RESPONSE:
+ECDF Clicks: Here we can see that we have encounter the majority of our data at the very beginning when x = 0 -- roughly 90%. At x = 1, we have pretty much all of it. This tells us that the data is largely made up of 0 values.
+```{r}
+qqplot(nyt10$Impressions, nyt10$Clicks)
+qqplot(nyt11$Impressions, nyt11$Clicks)
+qqplot(nyt12$Impressions, nyt12$Clicks)
+qqplot(nyt13$Impressions, nyt13$Clicks)
+qqplot(nyt14$Impressions, nyt14$Clicks)
+```
+
+
+## RESPONSE:
+qqplot Impressions & Clicks: Due to the nature of the clicks data being discrete and not continuous, we see the qqplot taking "steps." Instead of being a line or curve, we see steps four distinct steps being taken.
 
 #### d). Perform a significance test that is suitable for the variables you are investigating. Discuss the test results and indicate whether the null hypothesis is valid. min. 3-4 sentences (4000-level 4%, 6000-level 3%) 
 ```{r}
-#code
+wilcox.test(nyt10$Impressions, nyt10$Clicks)
+wilcox.test(nyt11$Impressions, nyt11$Clicks)
+wilcox.test(nyt12$Impressions, nyt12$Clicks)
+wilcox.test(nyt13$Impressions, nyt13$Clicks)
+wilcox.test(nyt14$Impressions, nyt14$Clicks)
 ```
-
+"If the p-value is low, the null must go!"
+For each test, the p-value < 2.2e-16 so we can reject the null. The alternative hypothesis is that the true location shift is not equal to 0.
 #### e). Discuss any observations you had about the datasets/ variables, other data in the dataset (0% ;-))
-
 ```{r}
-#code
+#Clicks data acts strangely since its primarily 0 values.
+# Any value other than 0 is an outlier.
 ```
 
 ## Q2. 6600-level question (3%). Filter the distributions you explored in Q1 using one or more of the other variables for only 2 (not 5) of the nyt datasets. Repeat Q1b, Q1c and Q1d and draw any conclusions from this study. min. 3-4 sentences
 ```{r}
-#code
+nyt10_m <- nyt10 %>% 
+  filter(Gender==1, Age > 30)
+nyt11_m <- nyt11 %>% 
+  filter(Gender==1, Age > 30)
 ```
 
+## This is filtering nyt10 and nyt11 where the gender is 1 (male) and age is over 30.
+
+### Q2b - Histograms
+```{r}
+hist(nyt10_m$Impressions)
+hist(nyt11_m$Impressions)
+```
+
+## RESPONSE:
+This filtered out plot looks extremely similiar to the histogram above.
+It seems like normal distributions with positive outliers. This makes the graph account for more values on the x-axis which makes the graph seem shifted but I would say that they are normal distributions prone to outliers.
+
+### Q2c - Plot the ECDFs, plot the quantile-quantile distribution 
+```{r}
+plot(ecdf(nyt10_m$Impressions))
+plot(ecdf(nyt11_m$Impressions))
+qqplot(nyt10_m$Impressions, nyt11_m$Impressions)
+```
+
+## RESPONSE:
+
+This qqplot looks at impressions in two datasets. The outcome looks linear which would imply a normal distribution. This doesn't come as a surprise given how similar we should expect these variables to be.
+
+### Q2d Perform a significance test that is suitable for the variables you are investigating. Discuss the test results and indicate whether the null hypothesis is valid. min. 3-4 sentences (4000-level 4%, 6000-level 3%)
+```{r}
+wilcox.test(nyt10_m$Impressions, nyt11_m$Impressions)
+```
+
+##RESPONSE:
+With an alpha of 5%, we do no have enough evidence to reject the null although with an alpha of 6%, we do have enough evidence to reject the null.
