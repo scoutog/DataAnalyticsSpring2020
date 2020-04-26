@@ -1,0 +1,235 @@
+# Read in data
+absentee <- read.csv("Absenteeism_at_work.csv")
+wine <- read.csv("winequality-red.csv", sep=";")
+library(tidyverse)
+library(reshape)
+library(corrplot)
+library(reshape2)
+library(dplyr)
+library(randomForest)
+library(rpart)
+library(visNetwork)
+library(sparkline)
+library(caret)
+# 1. EDA (3%) 
+
+#############   wine
+nrow(wine)
+dim(wine)
+table(is.na(wine))
+summary(wine)
+heatmap(cor(wine), Rowv = NA, Colv = NA)
+corrplot(cor(wine))
+wine$quality1 <- as.factor(wine$quality)
+
+ggplot(wine, aes(x=quality, fill=quality1)) +
+  geom_bar(stat="count") +
+  scale_x_continuous(breaks=seq(3,8,1)) +
+  ggtitle("Distribution of Quality") +
+  theme(legend.position = "none")
+
+ggplot(wine, aes(alcohol, quality,color=quality1))+
+  geom_point()
+
+ggplot(wine,aes(x=fixed.acidity,fill=quality1))+
+  geom_density(alpha=0.25) +
+  ggtitle("Fixed Acidity Level Distribution by Quality")
+
+ggplot(wine,aes(x=alcohol,fill=quality1))+
+  geom_density(alpha=0.25) +
+  ggtitle("Alcohol Distribution by Quality")
+
+ggplot(wine,aes(x=sulphates,fill=quality1))+
+  geom_density(alpha=0.25) +
+  ggtitle("Sulphate Distribution by Quality")
+
+ggplot(wine,aes(x=pH,fill=quality1))+
+  geom_density(alpha=0.25) +
+  ggtitle("pH Distribution by Quality")
+
+################ absentee
+colnames(absentee)
+cols <- c(2:5,12:17)
+absentee[cols] <- lapply(absentee[cols], factor)
+sapply(absentee, class)
+
+col_num <- c(6:11,14,17:21)
+absent_num <- absentee[,col_num]
+absent_num$Work.load.Average.day <- as.numeric(absent_num$Work.load.Average.day)
+absent_num$Son <- as.numeric(absent_num$Son)
+absent_num$Pet <- as.numeric(absent_num$Pet)
+
+sapply(absentee, class)
+
+heatmap(cor(absent_num), Rowv = NA, Colv = NA)
+absentee <- absentee %>%
+  mutate(Month.of.absence= fct_recode(Month.of.absence,
+                                      'None'='0','Jan'='1',
+                                      'Feb'='2','Mar'='3',
+                                      'Apr'='4','May'='5',
+                                      'Jun'='6','Jul'='7',
+                                      'Aug'='8','Sep'='9',
+                                      'Oct'='10','Nov'='11',
+                                      'Dec'='12') )
+
+absentee <- absentee %>%
+  mutate(Seasons= fct_recode(Seasons,'summer'='1','autumn'='2',
+                             'winter'='3','spring'='4'))
+
+absentee <- absentee %>%
+  mutate(Education = fct_recode(Education,'highschool'='1',
+                                'graduate'='2','postgraduate'='3',
+                                'master& doctrate'='4'))
+
+absentee <- absentee %>%
+  mutate(Day.of.the.week = fct_recode(Day.of.the.week,"Monday"="2",
+                                      "Tuesday"="3","Wednesday"="4",
+                                      "Thursday"="5","Friday"="6"))
+
+ggplot(absentee,aes(Reason.for.absence, fill= Reason.for.absence)) + 
+  geom_bar(stat = 'count') + coord_flip() + 
+  theme(legend.position='none') + xlab('Reason for absence')
+
+ggplot(absentee, aes(Son, fill = Son)) + geom_bar()
+
+ggplot(absentee, aes(Social.smoker, fill =  Social.drinker)) + geom_bar() 
+
+ggplot(absentee, aes(Day.of.the.week, fill =  Day.of.the.week)) + geom_bar()
+
+ggplot(absentee, aes(Seasons,fill = Seasons)) + geom_bar()
+
+ggplot(absentee, aes(Age, Absenteeism.time.in.hours)) + 
+  geom_point(aes(color=Education)) +
+  geom_smooth(color="blue")
+
+ggplot(absentee, aes(Body.mass.index, Absenteeism.time.in.hours)) + 
+  geom_point(aes(color=Social.smoker)) +
+  geom_smooth(color="blue")
+
+ggplot(absentee, aes(Education,fill = Education)) + geom_bar()
+
+boxplot(absentee$Absenteeism.time.in.hours,main="Absentee Time in Hours")
+hist(absentee$Absenteeism.time.in.hours, breaks=15,col="maroon")
+# 2. Model Development, Validation, Optimization and Tuning (14%) Choose 
+# three different models
+set.seed(1)
+smp_size <- floor(0.8 * nrow(wine))
+train_ind <- sample(seq_len(nrow(wine)), size = smp_size)
+train <- wine[train_ind, ]
+test <- wine[-train_ind, ]
+######## Wine
+# Model 1 - Random Forest
+wine_rf <- randomForest(quality1 ~ . - quality, train, ntree=150)
+wine_rf
+
+rf_pred <- predict(wine_rf, test[,!colnames(test) %in% c("quality1")])
+confusionMatrix(rf_pred, test$quality1)
+
+imp <- importance(wine_rf)
+varImp <- data.frame(Variables = row.names(imp), 
+                     Importance = round(imp[ ,'MeanDecreaseGini'],2))
+rankImp <- varImp %>%
+  mutate(Rank = paste0('#',dense_rank(desc(imp))))
+ggplot(rankImp, aes(reorder(Variables, imp), imp, 
+                    fill = imp)) +
+  geom_bar(stat='identity') + 
+  geom_text(aes(Variables, 0.5, label = Rank),
+            hjust=0, vjust=0.55, size = 4, colour = 'yellow') +
+  labs(x = 'Variables') +
+  coord_flip()
+
+#Model 2 - RPart Decision Trees
+wine_rpart <- rpart(quality1~.-quality, train)
+visTree(wine_rpart)
+
+rpart_pred <- predict(wine_rpart, test[,!colnames(test) %in% c("quality1")], type='class')
+rpart_pred
+confusionMatrix(rpart_pred,test$quality1)
+
+#Model 3 - Logistic Regression
+wine_glm = glm(quality ~ .-quality1, data=train)
+summary(wine_lm)
+
+wine_glm_pred <- predict(wine_glm, test)
+MSE.lm <- sum((wine_glm_pred - test$quality)^2)/nrow(test)
+MSE.lm
+
+varImp(wine_glm)
+################### Absentee
+absentee <- absentee[!(absentee$Reason.for.absence==0),]
+set.seed(1)
+smp_size <- floor(0.8 * nrow(absentee))
+train_ind <- sample(seq_len(nrow(absentee)), size = smp_size)
+train <- absentee[train_ind, ]
+test <- absentee[-train_ind, ]
+
+# Model 1 - KMeans Cluster
+library(cluster)    
+library(factoextra)
+library(gridExtra)
+absent_num_sc <- scale(absent_num)
+fviz_nbclust(absent_num_sc, kmeans, method = "wss")
+fviz_nbclust(absent_num_sc, kmeans, method = "silhouette")
+gap_stat <- clusGap(absent_num_sc, FUN = kmeans, nstart = 25,
+                    K.max = 10, B = 50)
+fviz_gap_stat(gap_stat)
+
+k3 <- kmeans(absent_num_sc, centers = 3, nstart = 25)
+fviz_cluster(k3, data = absent_num_sc)
+
+k4 <- kmeans(absent_num_sc, centers = 4, nstart = 25)
+k6 <- kmeans(absent_num_sc, centers = 6, nstart = 25)
+k9 <- kmeans(absent_num_sc, centers = 9, nstart = 25)
+
+p1 <- fviz_cluster(k3, geom = "point", data = absent_num_sc) + ggtitle("k = 3")
+p2 <- fviz_cluster(k4, geom = "point",  data = absent_num_sc) + ggtitle("k = 4")
+p3 <- fviz_cluster(k6, geom = "point",  data = absent_num_sc) + ggtitle("k = 6")
+p4 <- fviz_cluster(k9, geom = "point",  data = absent_num_sc) + ggtitle("k = 9")
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+best <- kmeans(absent_num_sc, centers=3, nstart=25)
+best$center
+fviz_cluster(best, absent_num_sc)
+# Model 2 - Tree
+temp <- as.integer(as.character(absentee$Absenteeism.time.in.hours))
+for (i in 1:length(temp)) {
+  if(temp[i] >= 1 & temp[i] <=4){
+    absentee$absentlevel[i] = "low"
+  } else if(temp[i] > 4 & temp[i] <= 8){
+    absentee$absentlevel[i] = "medium"
+  } else { absentee$absentlevel[i] = "high"}
+}
+table(absentee$absentlevel)
+absentee$absentlevel <- as.factor(absentee$absentlevel)
+absentee$Work.load.Average.day <- as.numeric(absentee$Work.load.Average.day)
+rm <- c(1,21)
+absentee <- absentee[,-rm]
+smp_size <- floor(0.8 * nrow(absentee))
+train_ind <- sample(seq_len(nrow(absentee)), size = smp_size)
+train <- absentee[train_ind, ]
+test <- absentee[-train_ind, ]
+library(tree)
+absent_tree <- rpart(absentlevel~., train)
+visTree(absent_tree)
+
+rpart_pred <- predict(absent_tree, test[,!colnames(test) %in% c("absentlevel")], type='class')
+rpart_pred
+confusionMatrix(rpart_pred,test$absentlevel)
+
+# Model 3 - Random Forest
+abs_rf <- randomForest(absentlevel~., train, ntree=250, importance=T)
+abs_rf
+
+abs_rf.pred <- predict(abs_rf, test, type = "class")
+confusionMatrix(abs_rf.pred, test$absentlevel)
+
+importance(abs_rf)
+varImpPlot(abs_rf)
+
+# 3. Decisions (3%) Describe your conclusions in regard to the model fit, 
+# predictions and how well (or not) it could be used for decisions and why. 
+# Min. 1 page of text + graphics.
+
+################# wine
+################ absentee
+
+## See document
